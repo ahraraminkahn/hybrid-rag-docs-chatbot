@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask My Docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F5F1;
+    --paper-raised:#FFFFFF;
+    --ink:#1E2A38;
+    --ink-soft:#5B6774;
+    --line:#DAD6CC;
+    --pine:#2F6F62;
+    --pine-dark:#234F45;
+    --amber:#B9793A;
+    --amber-bg:#F1E4D2;
+    --error:#B0463A;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:15px;
+    line-height:1.55;
+  }
+
+  .app{
+    display:grid;
+    grid-template-columns:280px 1fr;
+    height:100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    border-right:1px solid var(--line);
+    padding:28px 24px;
+    display:flex;
+    flex-direction:column;
+    background:var(--paper);
+  }
+
+  .brand{
+    font-family:'Source Serif 4', serif;
+    font-size:22px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+
+  .brand-sub{
+    color:var(--ink-soft);
+    font-size:13px;
+    margin:0 0 28px;
+  }
+
+  .upload-box{
+    border:1.5px dashed var(--line);
+    border-radius:6px;
+    padding:20px 16px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .upload-box:hover, .upload-box.dragover{
+    border-color:var(--pine);
+    background:rgba(47,111,98,0.05);
+  }
+  .upload-box input{display:none;}
+  .upload-label{
+    display:block;
+    font-size:13.5px;
+    color:var(--ink-soft);
+  }
+  .upload-label strong{color:var(--ink);}
+
+  .upload-status{
+    margin-top:10px;
+    font-size:12.5px;
+    min-height:16px;
+    color:var(--ink-soft);
+  }
+  .upload-status.error{color:var(--error);}
+  .upload-status.ok{color:var(--pine-dark);}
+
+  .doc-list{
+    margin-top:24px;
+    flex:1;
+    overflow-y:auto;
+  }
+  .doc-list-title{
+    font-size:11.5px;
+    letter-spacing:0.02em;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+  }
+  .doc-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    padding:7px 0;
+    border-bottom:1px solid var(--line);
+    color:var(--ink);
+    word-break:break-word;
+  }
+  .doc-item:last-child{border-bottom:none;}
+  .doc-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--pine);
+    flex:none;
+  }
+  .empty-note{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    padding:6px 0;
+  }
+
+  .clear-btn{
+    margin-top:16px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    font-family:inherit;
+    font-size:12.5px;
+    padding:9px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .clear-btn:hover{
+    border-color:var(--error);
+    color:var(--error);
+  }
+
+  /* ---------- Chat pane ---------- */
+  .chat-pane{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+
+  .chat-header{
+    padding:22px 40px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  .chat-header h1{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size:19px;
+    margin:0;
+  }
+  .chat-header p{
+    margin:4px 0 0;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+
+  .messages{
+    flex:1;
+    overflow-y:auto;
+    padding:28px 40px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+
+  .placeholder{
+    margin:auto;
+    text-align:center;
+    max-width:340px;
+    color:var(--ink-soft);
+  }
+  .placeholder .glyph{
+    font-family:'Source Serif 4', serif;
+    font-size:34px;
+    color:var(--pine);
+    margin-bottom:10px;
+  }
+  .placeholder p{font-size:13.5px; margin:0;}
+
+  .msg{
+    max-width:640px;
+    animation:rise .18s ease-out;
+  }
+  @keyframes rise{
+    from{opacity:0; transform:translateY(4px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .msg.user{
+    align-self:flex-end;
+  }
+  .msg.assistant{
+    align-self:flex-start;
+  }
+
+  .bubble{
+    padding:12px 16px;
+    border-radius:10px;
+    font-size:14.5px;
+    white-space:pre-wrap;
+  }
+  .msg.user .bubble{
+    background:var(--pine);
+    color:#fff;
+    border-bottom-right-radius:3px;
+  }
+  .msg.assistant .bubble{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-bottom-left-radius:3px;
+  }
+  .msg.assistant.pending .bubble{
+    color:var(--ink-soft);
+    font-style:italic;
+  }
+  .msg.assistant.error .bubble{
+    border-color:var(--error);
+    color:var(--error);
+  }
+
+  .sources{
+    margin-top:8px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .source-chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    background:var(--amber-bg);
+    color:var(--amber);
+    padding:3px 8px;
+    border-radius:4px;
+  }
+
+  .composer{
+    border-top:1px solid var(--line);
+    padding:18px 40px 24px;
+  }
+  .composer-inner{
+    display:flex;
+    align-items:flex-end;
+    gap:10px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px 8px 8px 16px;
+  }
+  .composer-inner:focus-within{
+    border-color:var(--pine);
+  }
+  #question{
+    flex:1;
+    border:none;
+    outline:none;
+    resize:none;
+    background:transparent;
+    font-family:inherit;
+    font-size:14.5px;
+    color:var(--ink);
+    max-height:140px;
+    padding:8px 0;
+  }
+  #question::placeholder{color:var(--ink-soft);}
+
+  .send-btn{
+    background:var(--pine);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:9px 16px;
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:500;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .send-btn:hover{background:var(--pine-dark);}
+  .send-btn:disabled{background:var(--line); color:var(--ink-soft); cursor:not-allowed;}
+
+  @media (max-width:720px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .chat-header, .messages, .composer{padding-left:20px; padding-right:20px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <p class="brand">Ask My Docs</p>
+    <p class="brand-sub">Grounded Q&amp;A over your own files.</p>
+
+    <label class="upload-box" id="uploadBox">
+      <input type="file" id="fileInput" accept=".pdf,.txt">
+      <span class="upload-label"><strong>Click to upload</strong><br>or drop a PDF / TXT file</span>
+    </label>
+    <div class="upload-status" id="uploadStatus"></div>
+
+    <div class="doc-list">
+      <p class="doc-list-title">KNOWLEDGE BASE</p>
+      <div id="docList"><p class="empty-note">No documents indexed yet.</p></div>
+    </div>
+
+    <button class="clear-btn" id="clearBtn">Clear knowledge base</button>
+  </aside>
+
+  <main class="chat-pane">
+    <div class="chat-header">
+      <h1>Chat</h1>
+      <p>Answers are grounded only in what you've uploaded, with sources cited below each reply.</p>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="placeholder" id="placeholder">
+        <div class="glyph">§</div>
+        <p>Upload a document on the left, then ask a question about it.</p>
+      </div>
+    </div>
+
+    <div class="composer">
+      <div class="composer-inner">
+        <textarea id="question" rows="1" placeholder="Ask a question about your documents…"></textarea>
+        <button class="send-btn" id="sendBtn">Send</button>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+const uploadBox = document.getElementById('uploadBox');
+const fileInput = document.getElementById('fileInput');
+const uploadStatus = document.getElementById('uploadStatus');
+const docList = document.getElementById('docList');
+const clearBtn = document.getElementById('clearBtn');
+const messages = document.getElementById('messages');
+const placeholder = document.getElementById('placeholder');
+const question = document.getElementById('question');
+const sendBtn = document.getElementById('sendBtn');
+
+function renderDocList(files){
+  if(!files || files.length === 0){
+    docList.innerHTML = '<p class="empty-note">No documents indexed yet.</p>';
+    return;
+  }
+  docList.innerHTML = files.map(f =>
+    `<div class="doc-item"><span class="doc-dot"></span><span>${escapeHtml(f)}</span></div>`
+  ).join('');
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function setUploadStatus(text, kind){
+  uploadStatus.textContent = text;
+  uploadStatus.className = 'upload-status' + (kind ? ' ' + kind : '');
+}
+
+async function uploadFile(file){
+  setUploadStatus(`Indexing ${file.name}…`, '');
+  const formData = new FormData();
+  formData.append('file', file);
+  try{
+    const res = await fetch('/upload', { method:'POST', body: formData });
+    const data = await res.json();
+    if(!res.ok){
+      setUploadStatus(data.error || 'Upload failed.', 'error');
+      return;
+    }
+    setUploadStatus(`Added ${data.chunks_added} chunks from ${file.name}.`, 'ok');
+    renderDocList(data.files);
+  }catch(err){
+    setUploadStatus('Could not reach the server.', 'error');
+  }
+}
+
+fileInput.addEventListener('change', () => {
+  if(fileInput.files[0]) uploadFile(fileInput.files[0]);
+});
+
+['dragover','dragleave','drop'].forEach(evt => {
+  uploadBox.addEventListener(evt, e => e.preventDefault());
+});
+uploadBox.addEventListener('dragover', () => uploadBox.classList.add('dragover'));
+uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
+uploadBox.addEventListener('drop', e => {
+  uploadBox.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if(file) uploadFile(file);
+});
+
+clearBtn.addEventListener('click', async () => {
+  try{
+    await fetch('/reset', { method:'POST' });
+  }catch(err){ /* ignore */ }
+  renderDocList([]);
+  setUploadStatus('Knowledge base cleared.', 'ok');
+  messages.innerHTML = '';
+  messages.appendChild(placeholder);
+});
+
+function addMessage(role, text){
+  if(placeholder.parentNode) placeholder.remove();
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  div.appendChild(bubble);
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return div;
+}
+
+function addSources(msgEl, sources){
+  if(!sources || sources.length === 0) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'sources';
+  sources.forEach(s => {
+    const chip = document.createElement('span');
+    chip.className = 'source-chip';
+    chip.textContent = s;
+    wrap.appendChild(chip);
+  });
+  msgEl.appendChild(wrap);
+}
+
+async function ask(){
+  const q = question.value.trim();
+  if(!q) return;
+  question.value = '';
+  autosize();
+  addMessage('user', q);
+
+  const pending = addMessage('assistant', 'Thinking…');
+  pending.classList.add('pending');
+  sendBtn.disabled = true;
+
+  try{
+    const res = await fetch('/ask', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ question: q })
+    });
+    const data = await res.json();
+    pending.classList.remove('pending');
+    if(!res.ok){
+      pending.classList.add('error');
+      pending.querySelector('.bubble').textContent = data.error || 'Something went wrong.';
+    }else{
+      pending.querySelector('.bubble').textContent = data.answer;
+      addSources(pending, data.sources);
+    }
+  }catch(err){
+    pending.classList.remove('pending');
+    pending.classList.add('error');
+    pending.querySelector('.bubble').textContent = 'Could not reach the server.';
+  }finally{
+    sendBtn.disabled = false;
+    messages.scrollTop = messages.scrollHeight;
+  }
+}
+
+function autosize(){
+  question.style.height = 'auto';
+  question.style.height = Math.min(question.scrollHeight, 140) + 'px';
+}
+
+question.addEventListener('input', autosize);
+question.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    ask();
+  }
+});
+sendBtn.addEventListener('click', ask);
+</script>
+
+</body>
+</html>

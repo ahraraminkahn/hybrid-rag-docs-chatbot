@@ -1,0 +1,14 @@
+flask
+python-dotenv
+langchain
+langchain-community
+langchain-core
+langchain-classic
+langchain-openai
+langchain-huggingface
+langchain-text-splitters
+langchain-qdrant
+qdrant-client
+pypdf
+sentence-transformers
+rank_bm25
