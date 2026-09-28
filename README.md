@@ -1,4 +1,4 @@
-Under the hood it's a small Flask app wrapping a retrieval-augmented generation (RAG) pipeline: hybrid retrieval (vector + BM25), cross-encoder reranking, and grounded generation with an LLM.
+It's a small Flask app wrapping a retrieval-augmented generation (RAG) pipeline: hybrid retrieval (vector + BM25), cross-encoder reranking, and grounded generation with an LLM.
 
 Features
 PDF and TXT ingestion – drag and drop or click to upload
